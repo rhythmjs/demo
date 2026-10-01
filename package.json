@@ -1,0 +1,54 @@
+{
+  "name": "rhythm-demo",
+  "version": "0.0.2",
+  "private": true,
+  "description": "Demo app for Rhythm on Bun: a real-world, end-to-end application built up from the starter template.",
+  "license": "ISC",
+  "type": "module",
+  "scripts": {
+    "dev": "bun --watch src/main.ts",
+    "start": "bun src/main.ts",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "bun src/db/migrate.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test",
+    "test:e2e": "bun test ./test/*.e2e-spec.ts",
+    "lint": "oxlint src test",
+    "fmt": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\" \"*.json\"",
+    "fmt:check": "prettier --check \"src/**/*.ts\" \"test/**/*.ts\" \"*.json\"",
+    "check": "bun run fmt:check && bun run lint && bun run typecheck"
+  },
+  "dependencies": {
+    "@rhythmjs/better-auth": "^0.0.2",
+    "@rhythmjs/http": "^0.0.8",
+    "@rhythmjs/openapi": "^0.0.5",
+    "@rhythmjs/rhythm": "0.0.13",
+    "@rhythmjs/router": "^0.0.12",
+    "@rhythmjs/scalar": "^0.0.5",
+    "@rhythmjs/security": "^0.0.6",
+    "better-auth": "^1.7.7",
+    "drizzle-orm": "^0.45.3",
+    "nodemailer": "^10.0.0",
+    "zod": "^4.2.0"
+  },
+  "devDependencies": {
+    "@rhythmjs/testing": "^0.0.2",
+    "@types/bun": "^1.2.0",
+    "@types/nodemailer": "^8.0.0",
+    "drizzle-kit": "^0.31.11",
+    "oxlint": "^1.0.0",
+    "prettier": "^3.5.0",
+    "typescript": "^7.0.2"
+  },
+  "engines": {
+    "bun": ">=1.2.0"
+  },
+  "overrides": {
+    "@rhythmjs/http": "file:../http",
+    "@rhythmjs/openapi": "file:../openapi/packages/openapi",
+    "@rhythmjs/rhythm": "file:../rhythm/packages/rhythm",
+    "@rhythmjs/router": "file:../rhythm/packages/router",
+    "@rhythmjs/scalar": "file:../openapi/packages/scalar",
+    "@rhythmjs/better-auth": "file:../better-auth"
+  }
+}
