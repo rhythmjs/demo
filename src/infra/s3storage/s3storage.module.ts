@@ -4,8 +4,11 @@ import { createS3StorageService, type S3StorageOptions } from "./s3storage.servi
 
 export const s3StorageModule = {
   forRoot(options: S3StorageOptions = {}) {
-    return new Rhythm<RhythmHttpContext>({ name: "s3storage", type: "module" }).provide(() => ({
-      s3StorageService: createS3StorageService(options),
-    }));
+    const module = new Rhythm<RhythmHttpContext, { s3StorageService: ReturnType<typeof createS3StorageService> }>({
+      name: "s3storage",
+      type: "module",
+    });
+    module.context.s3StorageService = createS3StorageService(options);
+    return module;
   },
 };

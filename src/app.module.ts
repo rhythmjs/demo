@@ -29,9 +29,22 @@ const openapiConfig = defineDocument({
   },
 });
 
-export const appModule = new Rhythm<RhythmHttpContext>({ name: "app", type: "module" })
-  .register(databaseModule.forRoot(), (deps) => ({ db: deps.db }))
-  .register(mailerModule.forRoot(), (deps) => ({ mailerService: deps.mailerService }))
+const database = databaseModule.forRoot();
+const mailer = mailerModule.forRoot();
+
+export const appModule = new Rhythm<RhythmHttpContext, { appService: typeof appService }>({
+  name: "app",
+  type: "module",
+});
+
+appModule.context.appService = appService;
+
+/** Releases the connections the app opened; call it on shutdown. */
+export const closeApp = () => Promise.all([database.close(), mailer.close()]);
+
+appModule
+  .register(database, (deps) => ({ db: deps.db }))
+  .register(mailer, (deps) => ({ mailerService: deps.mailerService }))
   .register(openapiModule.forRoot({ document: openapiConfig }))
   .register(scalarModule.forRoot())
   .use(cors({ origin: frontendOrigin, credentials: true, allowHeaders: ["Content-Type", "Authorization"] }))
@@ -45,7 +58,6 @@ export const appModule = new Rhythm<RhythmHttpContext>({ name: "app", type: "mod
   .register(s3StorageModule.forRoot(), (deps) => ({ s3StorageService: deps.s3StorageService }))
   .register(projectsModule)
   .register(tasksModule)
-  .provide(() => ({ appService }))
   .use(appController.middleware())
   .use((ctx) => {
     ctx.response.status = 404;

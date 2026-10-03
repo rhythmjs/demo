@@ -1,6 +1,6 @@
 import { Rhythm } from "@rhythmjs/rhythm";
 import type { RhythmHttpContext } from "@rhythmjs/router/adapters/context";
-import { closeDatabase, createDatabase } from ".";
+import { closeDatabase, createDatabase, type Database } from ".";
 
 export interface DatabaseModuleOptions {
   url?: string;
@@ -9,10 +9,8 @@ export interface DatabaseModuleOptions {
 export const databaseModule = {
   forRoot(options: DatabaseModuleOptions = {}) {
     const database = createDatabase(options.url);
-    const module = new Rhythm<RhythmHttpContext>({ name: "database", type: "module" }).provide(
-      () => database,
-      closeDatabase,
-    );
-    return Object.assign(module, { db: database.db });
+    const module = new Rhythm<RhythmHttpContext, { db: Database }>({ name: "database", type: "module" });
+    module.context.db = database.db;
+    return Object.assign(module, { close: () => closeDatabase(database) });
   },
 };

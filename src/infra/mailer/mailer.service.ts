@@ -34,7 +34,7 @@ export function createMailer(options: MailerOptions = {}) {
       sendVerificationEmail: (to: string, name: string, url: string) => sendContent(to, verificationMail(name, url)),
       sendPasswordReset: (to: string, name: string, url: string) => sendContent(to, passwordResetMail(name, url)),
     },
-    "#transport": transport,
+    transport,
   };
 }
 
@@ -42,5 +42,5 @@ export type Mailer = ReturnType<typeof createMailer>;
 export type MailerService = Mailer["mailerService"];
 
 export function closeMailer(value: Mailer): void {
-  value["#transport"].close();
+  value.transport.close();
 }

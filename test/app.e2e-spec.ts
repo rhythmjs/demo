@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { sql } from "drizzle-orm";
 import { toFetchHandler } from "@rhythmjs/router/fetch";
-import { appModule } from "../src/app.module";
+import { appModule, closeApp } from "../src/app.module";
 import { closeDatabase, createDatabase } from "../src/db";
 import { runMigrations } from "../src/db/migrate";
 import { createS3StorageService } from "../src/infra/s3storage/s3storage.service";
@@ -23,7 +23,7 @@ const s3Up = await s3.exists("probe").then(
 describe("AppController (e2e)", () => {
   const app = toFetchHandler(appModule);
 
-  afterAll(() => appModule.teardown());
+  afterAll(() => closeApp());
 
   test("/ (GET)", async () => {
     const res = await app(new Request("http://localhost/"));

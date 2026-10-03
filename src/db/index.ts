@@ -8,14 +8,14 @@ export type Database = BunSQLDatabase<typeof schema>;
 
 export interface DatabaseValue {
   db: Database;
-  "#client": SQL;
+  client: SQL;
 }
 
 export function createDatabase(url: string = databaseUrl): DatabaseValue {
   const client = new SQL(url);
-  return { db: drizzle({ client, schema }), "#client": client };
+  return { db: drizzle({ client, schema }), client };
 }
 
 export async function closeDatabase(value: DatabaseValue): Promise<void> {
-  await value["#client"].close();
+  await value.client.close();
 }
