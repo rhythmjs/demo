@@ -29,7 +29,7 @@ describe("AppController (e2e)", () => {
     const res = await app(new Request("http://localhost/"));
 
     expect(res.status).toBe(200);
-    expect(res.headers.get("content-type")).toBe("text/plain");
+    expect(res.headers.get("content-type")).toBe("text/plain; charset=utf-8");
     expect(await res.text()).toBe("Hello World!");
   });
 
@@ -37,7 +37,7 @@ describe("AppController (e2e)", () => {
     const res = await app(new Request("http://localhost/missing"));
 
     expect(res.status).toBe(404);
-    expect(res.headers.get("content-type")).toBe("application/json");
+    expect(res.headers.get("content-type")).toBe("application/json; charset=utf-8");
     expect(await res.json()).toEqual({ success: false, status: 404, message: "Not Found" });
   });
 
