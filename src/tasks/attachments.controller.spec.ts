@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { mount } from "@rhythmjs/rhythm";
 import { runHttpMiddleware } from "@rhythmjs/testing/router";
 import { attachmentsController } from "./attachments.controller";
 import type { AttachmentsService } from "./attachments.service";
@@ -9,7 +10,7 @@ const signedIn = { session: { id: "s1" }, user };
 const base = "/projects/p1/tasks/t1/attachments";
 
 const run = (path: string, service: Partial<AttachmentsService>, session: unknown = signedIn) =>
-  runHttpMiddleware(attachmentsController.middleware(), path, {
+  runHttpMiddleware(mount(attachmentsController), path, {
     auth: authStub(session),
     attachmentsService: service as AttachmentsService,
   });

@@ -6,8 +6,9 @@ import { apiQuery } from "@rhythmjs/openapi/query";
 import { apiResponse } from "@rhythmjs/openapi/response";
 import { apiCookieAuth } from "@rhythmjs/openapi/security";
 import { apiTags } from "@rhythmjs/openapi/tags";
+import { documented } from "@rhythmjs/openapi/generate";
 import { RhythmRouter } from "@rhythmjs/router";
-import type { RhythmHttpContext } from "@rhythmjs/router/adapters/context";
+import type { RhythmHttpContext } from "@rhythmjs/router/context";
 import { z } from "zod";
 import {
   createTaskSchema,
@@ -27,12 +28,12 @@ export type TasksContext = RhythmHttpContext &
 const unauthorized = apiResponse(401, { description: "No session" });
 const notFound = apiResponse(404, { description: "Project or task not found" });
 
-export const tasksController = new RhythmRouter<TasksContext>({ prefix: "/projects/:projectId/tasks" })
+export const tasksController = documented(new RhythmRouter<TasksContext>())
   .use(apiTags("tasks"))
   .use(apiCookieAuth("cookieAuth"))
   .use(requireSession())
   .get(
-    "/",
+    "/projects/:projectId/tasks",
     apiQuery(listTasksQuerySchema),
     apiParam(projectParamSchema),
     apiOperation({ summary: "List a project's tasks", operationId: "listTasks" }),
@@ -46,7 +47,7 @@ export const tasksController = new RhythmRouter<TasksContext>({ prefix: "/projec
     },
   )
   .post(
-    "/",
+    "/projects/:projectId/tasks",
     apiBody(createTaskSchema),
     apiParam(projectParamSchema),
     apiOperation({ summary: "Create a task in a project", operationId: "createTask" }),
@@ -60,7 +61,7 @@ export const tasksController = new RhythmRouter<TasksContext>({ prefix: "/projec
     },
   )
   .get(
-    "/:id",
+    "/projects/:projectId/tasks/:id",
     apiParam(taskParamSchema),
     apiOperation({ summary: "Get a task", operationId: "getTask" }),
     apiResponse(200, { description: "The task", schema: taskSchema }),
@@ -73,7 +74,7 @@ export const tasksController = new RhythmRouter<TasksContext>({ prefix: "/projec
     },
   )
   .patch(
-    "/:id",
+    "/projects/:projectId/tasks/:id",
     apiBody(updateTaskSchema),
     apiParam(taskParamSchema),
     apiOperation({ summary: "Update a task", operationId: "updateTask" }),
@@ -87,7 +88,7 @@ export const tasksController = new RhythmRouter<TasksContext>({ prefix: "/projec
     },
   )
   .delete(
-    "/:id",
+    "/projects/:projectId/tasks/:id",
     apiParam(taskParamSchema),
     apiOperation({ summary: "Delete a task", operationId: "deleteTask" }),
     apiResponse(204, { description: "Deleted" }),

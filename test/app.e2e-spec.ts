@@ -50,9 +50,9 @@ describe("AppController (e2e)", () => {
       expect.arrayContaining([
         "/",
         "/me",
-        "/projects/",
+        "/projects",
         "/projects/{id}",
-        "/projects/{projectId}/tasks/",
+        "/projects/{projectId}/tasks",
         "/projects/{projectId}/tasks/{id}",
       ]),
     );
@@ -130,9 +130,9 @@ describe("AppController (e2e)", () => {
     test("projects: create, list, filter, update, delete", async () => {
       const cookie = await signUp("grace");
 
-      expect((await call(cookie, "POST", "/projects/", { name: "  " })).status).toBe(400);
+      expect((await call(cookie, "POST", "/projects", { name: "  " })).status).toBe(400);
 
-      const created = await call(cookie, "POST", "/projects/", { name: "Launch", description: "Ship it" });
+      const created = await call(cookie, "POST", "/projects", { name: "Launch", description: "Ship it" });
       expect(created.status).toBe(201);
       const project = (await created.json()) as { id: string; status: string };
       expect(project).toMatchObject({ name: "Launch", description: "Ship it", status: "active" });
@@ -152,7 +152,7 @@ describe("AppController (e2e)", () => {
 
     test("tasks: full lifecycle inside a project, with completedAt tracking", async () => {
       const cookie = await signUp("linus");
-      const project = (await (await call(cookie, "POST", "/projects/", { name: "Kernel" })).json()) as { id: string };
+      const project = (await (await call(cookie, "POST", "/projects", { name: "Kernel" })).json()) as { id: string };
       const base = `/projects/${project.id}/tasks`;
 
       expect((await call(cookie, "POST", base, { title: "x", dueAt: "tomorrow" })).status).toBe(400);
@@ -188,7 +188,7 @@ describe("AppController (e2e)", () => {
     test("users cannot see or touch each other's projects and tasks", async () => {
       const owner = await signUp("owner");
       const intruder = await signUp("intruder");
-      const project = (await (await call(owner, "POST", "/projects/", { name: "Private" })).json()) as { id: string };
+      const project = (await (await call(owner, "POST", "/projects", { name: "Private" })).json()) as { id: string };
       const task = (await (await call(owner, "POST", `/projects/${project.id}/tasks`, { title: "Secret" })).json()) as {
         id: string;
       };

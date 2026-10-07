@@ -6,8 +6,9 @@ import { apiParam } from "@rhythmjs/openapi/param";
 import { apiResponse } from "@rhythmjs/openapi/response";
 import { apiCookieAuth } from "@rhythmjs/openapi/security";
 import { apiTags } from "@rhythmjs/openapi/tags";
+import { documented } from "@rhythmjs/openapi/generate";
 import { RhythmRouter } from "@rhythmjs/router";
-import type { RhythmHttpContext } from "@rhythmjs/router/adapters/context";
+import type { RhythmHttpContext } from "@rhythmjs/router/context";
 import { z } from "zod";
 import {
   attachmentParamSchema,
@@ -26,15 +27,13 @@ export type AttachmentsContext = RhythmHttpContext &
 const unauthorized = apiResponse(401, { description: "No session" });
 const notFound = apiResponse(404, { description: "Project, task or attachment not found" });
 
-export const attachmentsController = new RhythmRouter<AttachmentsContext>({
-  prefix: "/projects/:projectId/tasks/:taskId/attachments",
-})
+export const attachmentsController = documented(new RhythmRouter<AttachmentsContext>())
   .use(apiTags("attachments"))
   .use(apiCookieAuth("cookieAuth"))
   .use(requireSession())
   .use(bodyLimit(MAX_ATTACHMENT_BYTES + 1024 * 1024))
   .get(
-    "/",
+    "/projects/:projectId/tasks/:taskId/attachments",
     apiParam(taskScopeParamSchema),
     apiOperation({ summary: "List a task's attachments", operationId: "listAttachments" }),
     apiResponse(200, { description: "Attachment metadata", schema: z.array(attachmentSchema) }),
@@ -47,7 +46,7 @@ export const attachmentsController = new RhythmRouter<AttachmentsContext>({
     },
   )
   .post(
-    "/",
+    "/projects/:projectId/tasks/:taskId/attachments",
     apiBody(uploadAttachmentSchema, { contentType: "multipart/form-data", description: "The file to attach" }),
     apiParam(taskScopeParamSchema),
     apiOperation({ summary: "Attach a file to a task", operationId: "uploadAttachment" }),
@@ -69,7 +68,7 @@ export const attachmentsController = new RhythmRouter<AttachmentsContext>({
     },
   )
   .get(
-    "/:attachmentId",
+    "/projects/:projectId/tasks/:taskId/attachments/:attachmentId",
     apiParam(attachmentParamSchema),
     apiOperation({
       summary: "Download an attachment",
@@ -91,7 +90,7 @@ export const attachmentsController = new RhythmRouter<AttachmentsContext>({
     },
   )
   .delete(
-    "/:attachmentId",
+    "/projects/:projectId/tasks/:taskId/attachments/:attachmentId",
     apiParam(attachmentParamSchema),
     apiOperation({ summary: "Delete an attachment", operationId: "deleteAttachment" }),
     apiResponse(204, { description: "Deleted" }),

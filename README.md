@@ -1,77 +1,74 @@
 # demo
 
-A demo app for [Rhythm](https://github.com/rhythmjs/rhythm), started from the `template/` starter and grown
-into a real-world, end-to-end application.
+A full [Rhythm](https://github.com/rhythmjs/rhythm) application on Bun: email and password auth, PostgreSQL through
+Drizzle, S3 file storage, outgoing mail, a generated OpenAPI document with a Scalar UI, and an hourly cleanup job.
+It started from the `template/` starter and grew into an end-to-end project tracker (projects, tasks, attachments).
 
-## Structure
+## What it shows
+
+- **Modules and services.** Everything is a `Rhythm` module. `databaseModule`, `mailerModule` and `s3StorageModule`
+  own the infrastructure and close it on `app.stop()`. A feature module (`projectsModule`, `tasksModule`) `include`s
+  what it needs, builds its services with `decorate` (registrations run in order, so `db` is there), and mounts its own
+  controllers; `tasksModule` carries both `tasksController` and `attachmentsController`. The app just does
+  `.use(mount(projectsModule))`.
+- **Routers.** Each controller is a `RhythmRouter` with full paths, wrapped in `documented()` so it appears in the
+  OpenAPI document, and mounted by the module that owns it. Routers guard themselves with `.use(requireSession())`.
+- **Auth.** [Better Auth](https://www.better-auth.com) through `betterAuthModule.forRootAsync`, which builds `auth` from
+  the database and mailer and serves `/api/auth/**`. CORS comes before it for the cookie session.
+- **Docs.** `openapiModule` serves `/openapi.json`, `scalarModule` serves `/docs`.
+- **Scheduled work.** `src/jobs/cleanup.cron.ts` is a `RhythmCron` job that deletes expired sessions every hour;
+  `startCron(cleanupCron)` starts it with the app and `app.stop()` stops it.
+- **Serving.** `Bun.serve({ fetch: toFetchHandler(appModule) })` in `src/main.ts`.
 
 ```
 src/
-  main.ts bootstraps the Bun server
-  app.module.ts Rhythm instance: holds the service on its context, mounts the controller, handles 404s
-  app.controller.ts RhythmRouter instance: routes and handlers
-  app.service.ts plain class holding the business logic
+  main.ts                 Bun.serve
+  app.module.ts           the app: startup registrations, cors, auth, mounted routers
+  app.controller.ts       GET /, GET /me
+  db/                     createDatabase, databaseModule, Drizzle schema, migrations runner
+  infra/mailer            nodemailer service and templates
+  infra/s3storage         S3 service on Bun's S3Client
+  lib/auth.ts             createAuth(db, mailerService)
+  projects/  tasks/       controller, service, schema (zod) and module per feature
+  jobs/cleanup.cron.ts    expired-session cleanup
 ```
 
-- The **service** is a plain class. The **module** assigns it to `appModule.context.appService`, which makes it available
-  on the request context of everything mounted on it.
-- The **controller** is a `RhythmRouter` typed as `RhythmRouter<AppContext>`, so `ctx.appService` is fully
-  typed inside every handler. The module mounts it with `.use(appController.routes())`.
-- **main.ts** serves the module with a plain `Bun.serve` call; `toFetchHandler(appModule)` from `@rhythmjs/router/fetch` is its `fetch`.
-
-## Getting started
+## Run it
 
 ```sh
+docker compose up -d postgres minio mailpit
 bun install
-bun run dev # bun --watch src/main.ts
+bun run db:migrate # apply drizzle/*.sql
+bun run dev        # http://localhost:3000, API reference at /docs
 ```
 
-Then:
+Copy `.env.example` to `.env` to change ports, database, S3 or SMTP settings (Bun loads it). Mail goes to Mailpit
+(UI on :8025) when `SMTP_HOST` is set and to a JSON transport otherwise. Set `BETTER_AUTH_SECRET` outside local runs.
+After changing the schema, `bun run db:generate` emits a new migration.
 
-```sh
-curl http://localhost:3000/ # Hello World!
-curl http://localhost:3000/missing # {"success":false,"status":404,"message":"Not Found"}
-```
+## Endpoints
+
+| Method and path                                                            | Notes                                                       |
+| -------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| `GET /`                                                                    | Greeting                                                    |
+| `GET /me`                                                                  | Current user (needs a session)                              |
+| `ALL /api/auth/**`                                                         | Better Auth: sign up, sign in, verify email, reset password |
+| `GET /openapi.json`, `GET /docs`                                           | OpenAPI document and Scalar UI                              |
+| `GET, POST /projects`                                                      | List and create your projects                               |
+| `GET, PATCH, DELETE /projects/:id`                                         | One project; deleting removes its tasks and stored files    |
+| `GET, POST /projects/:projectId/tasks`                                     | List and create tasks                                       |
+| `GET, PATCH, DELETE /projects/:projectId/tasks/:id`                        | One task                                                    |
+| `GET, POST /projects/:projectId/tasks/:taskId/attachments`                 | List and upload (multipart field `file`, 10 MB max)         |
+| `GET, DELETE /projects/:projectId/tasks/:taskId/attachments/:attachmentId` | GET redirects to a short-lived presigned URL                |
+
+All routes under `/projects` need a session cookie from `/api/auth/sign-in/email`.
 
 ## Scripts
 
 ```sh
-bun run dev # run with reload on change
-bun run start # run once
-bun test # bun test runner
-bun run typecheck # tsc --noEmit
-bun run check # prettier --check + oxlint + tsc
+bun run dev        # run with reload on change
+bun run start      # run once
+bun test           # unit tests (no services needed)
+bun run test:e2e   # end-to-end; the parts needing Postgres or S3 skip when they are unreachable
+bun run check      # prettier --check, oxlint, tsc
 ```
-
-## Growing the app
-
-Add a feature by repeating the pattern: a `users.service.ts` class, a `users.controller.ts` router (give it
-a `prefix`), assign the service on the module's `context` in `app.module.ts`, and mount the controller with `.use(...routes())`
-before the 404 handler. Validation, sessions, logging, CORS, and friends are available as
-[`@rhythmjs/middleware`](https://github.com/rhythmjs/middleware), [`@rhythmjs/http`](https://github.com/rhythmjs/http),
-[`@rhythmjs/observability`](https://github.com/rhythmjs/observability), and
-[`@rhythmjs/security`](https://github.com/rhythmjs/security).
-
-## Auth and database
-
-[Better Auth](https://www.better-auth.com) (email and password) on PostgreSQL through [Drizzle ORM](https://orm.drizzle.team)
-and Bun's native `SQL` driver.
-
-- `src/db/index.ts`: `createDatabase()` / `closeDatabase()`, `databaseModule.forRoot()` assigns `db` on its context and exposes `close()` (`DATABASE_URL`, default `postgres://postgres:postgres@localhost:5432/demo`).
-- `src/db/schema/`: Better Auth's tables (`auth.schema.ts`) and the app's (`desk.schema.ts`: projects, tasks, task attachments).
-- `src/lib/auth.ts`: `createAuth(db, mailerService)`, which also sends the verification and password-reset emails.
-- `app.module.ts` mounts it with `betterAuthModule.forRoot({ auth })`; routers guard themselves with `.use(requireSession())`.
-
-## Infrastructure
-
-- `src/infra/mailer`: `mailerModule.forRoot()` assigns `mailerService` on its context (and exposes `close()`) (nodemailer). It uses SMTP when `SMTP_HOST` is set (Mailpit in `docker-compose.yml`, UI on :8025) and a JSON transport otherwise, so nothing is sent without configuration.
-- `src/infra/s3storage`: `s3StorageModule.forRoot()` assigns `s3StorageService` on its context on Bun's `S3Client` (MinIO in `docker-compose.yml`, `S3_*` variables).
-- Task attachments (`src/tasks/attachments.*`): `POST/GET /projects/:projectId/tasks/:taskId/attachments` (multipart field `file`, 10 MB max), `GET .../:attachmentId` redirects to a short-lived presigned URL, `DELETE .../:attachmentId`. Deleting a task or project also removes its stored objects.
-
-```sh
-docker compose up -d postgres minio mailpit
-bun run db:migrate # apply drizzle/*.sql
-bun run dev
-```
-
-After changing the schema, `bun run db:generate` emits a new migration. Set `BETTER_AUTH_SECRET` outside local runs. API reference: `/docs`.

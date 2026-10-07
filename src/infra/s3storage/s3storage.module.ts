@@ -1,14 +1,6 @@
-import { Rhythm } from "@rhythmjs/rhythm";
-import type { RhythmHttpContext } from "@rhythmjs/router/adapters/context";
-import { createS3StorageService, type S3StorageOptions } from "./s3storage.service";
+import { decorate, Rhythm } from "@rhythmjs/rhythm";
+import { createS3StorageService } from "./s3storage.service";
 
-export const s3StorageModule = {
-  forRoot(options: S3StorageOptions = {}) {
-    const module = new Rhythm<RhythmHttpContext, { s3StorageService: ReturnType<typeof createS3StorageService> }>({
-      name: "s3storage",
-      type: "module",
-    });
-    module.context.s3StorageService = createS3StorageService(options);
-    return module;
-  },
-};
+export const s3StorageModule = new Rhythm({ name: "s3storage" }).register(
+  decorate(() => ({ s3StorageService: createS3StorageService() })),
+);

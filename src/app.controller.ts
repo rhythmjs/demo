@@ -2,8 +2,9 @@ import { requireSession, type AuthContext } from "@rhythmjs/better-auth";
 import { apiOperation } from "@rhythmjs/openapi/operation";
 import { apiResponse } from "@rhythmjs/openapi/response";
 import { apiCookieAuth } from "@rhythmjs/openapi/security";
+import { documented } from "@rhythmjs/openapi/generate";
 import { RhythmRouter } from "@rhythmjs/router";
-import type { RhythmHttpContext } from "@rhythmjs/router/adapters/context";
+import type { RhythmHttpContext } from "@rhythmjs/router/context";
 import type { appService } from "./app.service";
 
 export type AppContext = RhythmHttpContext &
@@ -11,7 +12,7 @@ export type AppContext = RhythmHttpContext &
     appService: typeof appService;
   };
 
-export const appController = new RhythmRouter<AppContext>()
+export const appController = documented(new RhythmRouter<AppContext>())
   .get(
     "/",
     apiOperation({ summary: "Say hello", operationId: "getHello" }),

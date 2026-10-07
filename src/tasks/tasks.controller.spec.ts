@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { mount } from "@rhythmjs/rhythm";
 import { runHttpMiddleware } from "@rhythmjs/testing/router";
 import { tasksController } from "./tasks.controller";
 import type { TasksService } from "./tasks.service";
@@ -8,7 +9,7 @@ const authStub = (result: unknown) => ({ api: { getSession: async () => result }
 const signedIn = { session: { id: "s1" }, user };
 
 const run = (path: string, service: Partial<TasksService>, session: unknown = signedIn) =>
-  runHttpMiddleware(tasksController.middleware(), path, {
+  runHttpMiddleware(mount(tasksController), path, {
     auth: authStub(session),
     tasksService: service as TasksService,
   });

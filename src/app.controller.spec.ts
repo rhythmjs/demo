@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { mount } from "@rhythmjs/rhythm";
 import { runHttpMiddleware } from "@rhythmjs/testing/router";
 import { appController } from "./app.controller";
 import { appService } from "./app.service";
@@ -6,7 +7,7 @@ import { appService } from "./app.service";
 const authStub = (result: unknown) => ({ api: { getSession: async () => result } }) as never;
 
 const run = (path: string, service: typeof appService = appService, result: unknown = null) =>
-  runHttpMiddleware(appController.middleware(), path, {
+  runHttpMiddleware(mount(appController), path, {
     appService: service,
     auth: authStub(result),
     session: null,
